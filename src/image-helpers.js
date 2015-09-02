@@ -9,6 +9,50 @@ const createImage = promisify(lwip.create);
 
 class ImageHelpers {
 
+  // Public: Creates an image of the two cards given to a player using the
+  // light-weight image processing library (`lwip`), then writes the result to
+  // a file and uploads it to `imgur`.
+  //
+  // imageFiles - An array of two image files
+  // outputFile - The file where the result will be saved
+  // upload - (Optional) Defaults to `imgur`, but can be overridden for testing
+  //
+  // Returns an {Observable} that will `onNext` with the URL of the combined
+  // image, or `onError` if anything goes wrong
+  static createPrivateImage(cards, upload=imgur.uploadFile) {
+    let subj = new rx.AsyncSubject();
+    let imageFiles = cards.map((c) => `resources/${c.toAsciiString()}.jpeg`);
+
+    if (!fs.existsSync('./output')) {
+      fs.mkdirSync('./output');
+    }
+
+    // NB: The turn and river depend on the existence of the previous board
+    // image. In practice this will always be the case (you can't have a turn
+    // without a flop), but in testing be careful to follow that order.
+    //
+    // Also note that these images will always overwrite one another, e.g., we
+    // are not identifying them uniquely.
+    let makeImage = null;
+    switch (cards.length) {
+      case 2:
+        makeImage = ImageHelpers.combineTwo(imageFiles, './output/yourHand.jpeg');
+        break;
+      default:
+        throw new Error(`Attempted to make private user hand image for ${cards.length} cards.`);
+    }
+
+    makeImage
+        .then((outputFile) => upload(outputFile))
+        .then((result) => {
+          subj.onNext(result.data.link);
+          subj.onCompleted();
+      })
+      .catch((err) => subj.onError(err));
+
+    return subj;
+}
+
   // Public: Creates an image of the board from the given cards using the
   // light-weight image processing library (`lwip`), then writes the result to
   // a file and uploads it to `imgur`.
