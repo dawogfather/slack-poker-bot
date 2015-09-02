@@ -113,8 +113,7 @@ class TexasHoldem {
 
     this.initializeHand();
     this.deck.shuffle();
-    //this.dealPlayerCards();
-    this.dealPlayerCardsWithImages();
+    this.dealPlayerCards();
 
     let handEnded = new rx.Subject();
 
@@ -507,65 +506,6 @@ class TexasHoldem {
       }
     }
   }
-
-  // Private: Deals hole cards to each player in the game. To communicate this
-  // to the players, we send them a DM with the image description of the cards.
-  // We can't post in channel for obvious reasons.
-  //
-  // Returns nothing
-  dealPlayerCardsWithImages() {
-    this.orderedPlayers = PlayerOrder.determine(this.getPlayersInHand(), this.dealerButton, 'deal');
-
-    for (let player of this.orderedPlayers) {
-      let card = this.deck.drawCard();
-      this.playerHands[player.id] = [card];
-    }
-
-    for (let player of this.orderedPlayers) {
-      let card = this.deck.drawCard();
-      this.playerHands[player.id].push(card);
-
-      if (!player.isBot) {
-        let dm = this.playerDms[player.id];
-        dm.send(`Your hand is: ${this.playerHands[player.id]}`);
-
-        ImageHelpers.createPrivateImage(this.playerHands[player.id])
-                      .timeout(5000)
-                      .flatMap(url => {
-                    let message = {
-                      as_user: true,
-                      token: this.slack.token,
-                    };
-
-              message.attachments = [{title: `Your hand is:`,
-                                      fallback: "${this.playerHands[player.id]}",
-                                          text: "${this.playerHands[player.id]}",
-                                          color: 'good',
-                                          image_url: url
-                                          }];
-
-            //dm.send(message);
-            dm.postMessage(message);
-
-            // NB: Since we don't have a callback for the message arriving, we're
-            // just going to wait a second before continuing.
-            return rx.Observable.timer(1000, this.scheduler);
-          })
-          .take(1)
-          .catch(() => {
-              console.error('Creating users hand image timed out');
-            let message = `Your hand is: ${this.playerHands[player.id]}`;
-            dm.send(message);
-
-            return rx.Observable.timer(1000, this.scheduler);
-          });
-
-      } else {
-        player.holeCards = this.playerHands[player.id];
-      }
-    }
-  }
-
 
   // Private: Creates an image of the cards on board and posts it to the
   // channel using `message.attachments`.
