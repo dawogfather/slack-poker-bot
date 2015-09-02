@@ -10,6 +10,9 @@
   "env": {
     "SLACK_POKER_BOT_TOKEN": {
       "description": "Your Slack bot integration token (obtainable at https://my.slack.com/services/new/bot)"
+    },
+    "GLOBAL_TIMEOUT": {
+      "description": "The number of seconds to wait between turns for a user to respond (defaults to 30s)"
     }
   }
 }

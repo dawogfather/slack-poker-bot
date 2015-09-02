@@ -1,7 +1,9 @@
 const rx = require('rx');
 const _ = require('underscore-plus');
+const defaultTimeout = 30;
 
 class PlayerInteraction {
+
   // Public: Poll players that want to join the game during a specified period
   // of time.
   //
@@ -13,7 +15,7 @@ class PlayerInteraction {
   //
   // Returns an {Observable} that will `onNext` for each player that joins and
   // `onCompleted` when time expires or the max number of players join.
-  static pollPotentialPlayers(messages, channel, scheduler=rx.Scheduler.timeout, timeout=30, maxPlayers=10) {
+  static pollPotentialPlayers(messages, channel, scheduler=rx.Scheduler.timeout, timeout=defaultTimeout, maxPlayers=10) {
     let formatMessage = t => `Who wants to play? Respond with 'yes' in this channel in the next ${t} seconds.`;
     let {timeExpired} = PlayerInteraction.postMessageWithTimeout(channel, formatMessage, scheduler, timeout);
 
@@ -44,7 +46,7 @@ class PlayerInteraction {
   // Returns an {Observable} indicating the action the player took. If time
   // expires, a 'timeout' action is returned.
   static getActionForPlayer(messages, channel, player, previousActions,
-    scheduler=rx.Scheduler.timeout, timeout=30) {
+    scheduler=rx.Scheduler.timeout, timeout=defaultTimeout) {
     let availableActions = PlayerInteraction.getAvailableActions(player, previousActions);
     let formatMessage = t => PlayerInteraction.buildActionMessage(player, availableActions, t);
     let {timeExpired} = PlayerInteraction.postMessageWithTimeout(channel, formatMessage, scheduler, timeout);
